@@ -19,16 +19,18 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 from src.pipeline.config import DEFAULT_CONFIG, LandmarkConfig, PipelineConfig
 
 
-OVERPASS_URL = "https://overpass-api.de/api/interpreter"
+OVERPASS_URLS = [
+    "https://overpass-api.de/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter",
+    "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+]
 
 # Overpass QL template — fetches buildings, highways, waterways in bbox
-OVERPASS_QUERY_TEMPLATE = """
-[out:json][timeout:60];
+OVERPASS_QUERY_TEMPLATE = """[out:json][timeout:60];
 (
   way["building"]({south},{west},{north},{east});
   way["highway"]({south},{west},{north},{east});
   way["waterway"]({south},{west},{north},{east});
-  way["leisure"="park"]({south},{west},{north},{east});
   relation["building"]({south},{west},{north},{east});
 );
 out body;
@@ -49,25 +51,26 @@ def get_bbox(landmark: LandmarkConfig) -> tuple[float, float, float, float]:
 
 
 def fetch_overpass(query: str, retries: int = 3) -> dict:
-    """Sends a query to the Overpass API with retry logic."""
-    for attempt in range(retries):
-        try:
-            print(f"  → Querying Overpass API (attempt {attempt + 1}/{retries})...")
-            response = requests.post(
-                OVERPASS_URL,
-                data={"data": query},
-                timeout=90,
-            )
-            response.raise_for_status()
-            return response.json()
-        except requests.RequestException as e:
-            print(f"  ✗ Request failed: {e}")
-            if attempt < retries - 1:
-                wait = 5 * (attempt + 1)
-                print(f"  ⏳ Retrying in {wait}s...")
-                time.sleep(wait)
-            else:
-                raise
+    """Sends a query to the Overpass API with retry logic and fallback servers."""
+    headers = {
+        "User-Agent": "IsomanduMapBot/1.0 (https://github.com/koiralaprijun00/isomandu)"
+    }
+    for endpoint in OVERPASS_URLS:
+        for attempt in range(retries):
+            try:
+                print(f"  -> Querying Overpass endpoint: {endpoint} (attempt {attempt + 1}/{retries})...")
+                response = requests.post(
+                    endpoint,
+                    data={"data": query},
+                    headers=headers,
+                    timeout=60,
+                )
+                response.raise_for_status()
+                return response.json()
+            except requests.RequestException as e:
+                print(f"  x Request failed: {e}")
+                time.sleep(2)
+    raise RuntimeError("All Overpass endpoints failed.")
 
 
 def osm_to_geojson(osm_data: dict) -> dict:

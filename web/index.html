@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Isometric Kathmandu • Basantapur Durbar Square</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/openseadragon/4.1.0/openseadragon.min.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: #0c0d12;
+      color: #fff;
+      font-family: 'Courier New', Courier, monospace;
+      overflow: hidden;
+    }
+    #viewer {
+      width: 100vw;
+      height: 100vh;
+    }
+    .hud {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      z-index: 20;
+      background: rgba(15, 17, 23, 0.85);
+      border: 1px solid #2e3440;
+      padding: 12px 18px;
+      border-radius: 6px;
+      backdrop-filter: blur(4px);
+    }
+    .hud h1 {
+      margin: 0 0 4px 0;
+      font-size: 15px;
+      letter-spacing: 1px;
+      color: #e8b84b;
+    }
+    .hud p {
+      margin: 0;
+      font-size: 11px;
+      color: #8892b0;
+    }
+    .status-bar {
+      position: absolute;
+      bottom: 16px;
+      left: 16px;
+      z-index: 20;
+      background: rgba(15, 17, 23, 0.85);
+      border: 1px solid #2e3440;
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-size: 11px;
+      color: #8892b0;
+    }
+  </style>
+</head>
+<body>
+  <div class="hud">
+    <h1>ISOMETRIC KATHMANDU</h1>
+    <p>Basantapur Durbar Square Prototype (27.7042° N, 85.3067° E)</p>
+  </div>
+  <div class="status-bar">
+    Scroll to Zoom • Click & Drag to Pan
+  </div>
+  <div id="viewer"></div>
+  <script>
+    // Points to the sliced DZI or fallback image
+    OpenSeadragon({
+      id: "viewer",
+      prefixUrl: "https://cdnjs.cloudflare.com/ajax/libs/openseadragon/4.1.0/images/",
+      tileSources: {
+        type: 'image',
+        url: '../output/generated/basantapur_art.png'
+      },
+      showNavigationControl: false,
+      maxZoomPixelRatio: 3,
+      imageSmoothingEnabled: false
+    });
+  </script>
+</body>
+</html>
