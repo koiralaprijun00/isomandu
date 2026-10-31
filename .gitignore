@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+.venv/
+venv/
+env/
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Output files (generated artifacts, not tracked in git)
+output/renders/*
+output/generated/*
+output/tiles/*
+!output/renders/.gitkeep
+!output/generated/.gitkeep
+!output/tiles/.gitkeep
+
+# Node / Frontend
+node_modules/
+.next/
+out/
+.vercel/
+*.tsbuildinfo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
