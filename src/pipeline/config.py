@@ -45,9 +45,9 @@ class PipelineConfig:
         LandmarkConfig(
             name="Basantapur Durbar Square",
             slug="basantapur",
-            center_lat=27.7042,
-            center_lon=85.3067,
-            bbox_deg=0.005,
+            center_lat=27.7045,
+            center_lon=85.3068,
+            bbox_deg=0.0022,  # Tight ~240m focus on Durbar Square, Kasthamandap, Taleju & Hanuman Dhoka
             description="Historic royal palace complex, heart of old Kathmandu",
         ),
         LandmarkConfig(
@@ -97,27 +97,26 @@ class PipelineConfig:
     output_generated_dir: str = "output/generated"
     output_tiles_dir: str = "output/tiles"
 
-    # ── AI Generation ─────────────────────────────────────────────────────────
-    # Base prompt used for all tiles
+    # AI Generation
     base_prompt: str = (
-        "isometric pixel art, SimCity 2000 style, 16-bit retro game, "
-        "orthographic dimetric projection, clean pixel edges, dithered shadows, "
-        "warm afternoon sunlight, high detail"
+        "SimCity 2000 style, 16-bit retro isometric pixel art, orthographic dimetric projection, "
+        "crisp pixel outlines, dry reddish clay brick paved plazas and stone courtyards, "
+        "dithered shadows, warm golden hour afternoon sunlight, clean sharp 90s PC game aesthetic"
     )
     # Per-landmark style additions
     newar_style_prompt: str = (
-        "Newar pagoda architecture, multi-tiered clay tile roofs dachi appa, "
-        "red brick walls, intricately carved wooden struts and jhyal window frames, "
-        "stone-paved courtyards, chowk bahal layout, prayer flags, pigeons"
+        "traditional Kathmandu Newar architecture, multi-tiered pagoda temples with brown terracotta tile roofs, "
+        "elaborately carved dark wood struts and jhyal window latticework, exposed red brick masonry walls, "
+        "historic stone paved Durbar Square bahal courtyard, terracotta brick ground, pigeon flocks, brass pinnacles"
     )
     stupa_style_prompt: str = (
         "white stupa dome, all-seeing Buddha eyes, prayer flags strung overhead, "
         "monastery walls, butter lamp offerings, Buddhist iconography"
     )
     negative_prompt: str = (
-        "photorealistic 3D render, smooth gradients, anti-aliasing, blurry, "
-        "perspective vanishing point, modern glass skyscrapers, foggy, "
-        "low quality, watermark"
+        "water, ocean, river, sea, lake, pond, canal, blue ground, blue floor, blue puddles, puddles, swimming pool, "
+        "green grass lawn, neon colors, photorealistic 3D, smooth gradient, modern glass skyscrapers, modern vehicles, "
+        "blurry, anti-aliased, distortion, foggy, perspective vanishing point"
     )
 
     # Replicate model ID for ControlNet Canny

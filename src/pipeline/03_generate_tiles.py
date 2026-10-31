@@ -23,9 +23,9 @@ from src.pipeline.config import DEFAULT_CONFIG, LandmarkConfig, PipelineConfig
 
 LANDMARK_STYLE_OVERRIDES: dict[str, str] = {
     "basantapur": (
-        "Basantapur Kathmandu Durbar Square, multi-tiered Newar pagoda temples, "
-        "Taleju Bhawani temple, Kumari Ghar, red brick facade, intricate wooden struts, "
-        "stone courtyard, pigeons on rooftop, brick-paved plaza"
+        "Basantapur Kathmandu Durbar Square heritage complex, Kasthamandap pavilion, Taleju Bhawani multi-tier pagoda temple, "
+        "Gaddi Baithak white neoclassical palace, Kumari Ghar living goddess courtyard, red clay brick streets, "
+        "terracotta paved courtyards, stone bahals, carved wooden struts, brass temple spire, dry ground, no water"
     ),
     "boudhanath": (
         "Boudhanath stupa, giant white dome, all-seeing Buddha eyes painted in gold, "
