@@ -1,11 +1,8 @@
 """
 Step 03 — AI Tile Generation (ControlNet + Stable Diffusion)
 =============================================================
-Takes the Canny edge map from Step 02 and sends it to a ControlNet
-Stable Diffusion model via the Replicate API to generate isometric
-pixel-art tiles in the Newar architectural style.
-
-Requires: REPLICATE_API_TOKEN in your .env file
+Takes the Canny edge map from Step 02 and sends it to ControlNet Canny
+via the Replicate REST API to generate isometric pixel-art tiles.
 
 Outputs:
   output/generated/<slug>_art.png
@@ -13,9 +10,9 @@ Outputs:
 
 import os
 import sys
-import urllib.request
-
-import replicate
+import time
+import base64
+import requests
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -23,8 +20,6 @@ load_dotenv()
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 from src.pipeline.config import DEFAULT_CONFIG, LandmarkConfig, PipelineConfig
 
-
-# ── Per-landmark prompt customisation ────────────────────────────────────────
 
 LANDMARK_STYLE_OVERRIDES: dict[str, str] = {
     "basantapur": (
@@ -34,33 +29,28 @@ LANDMARK_STYLE_OVERRIDES: dict[str, str] = {
     ),
     "boudhanath": (
         "Boudhanath stupa, giant white dome, all-seeing Buddha eyes painted in gold, "
-        "prayer flags radiating outward, monastery rooftops, butter lamp offerings, "
-        "pilgrims walking kora, colorful thangka banners"
+        "prayer flags radiating outward, monastery rooftops, butter lamp offerings"
     ),
     "swayambhunath": (
         "Swayambhunath stupa on hilltop, steep stone staircase, white stupa with golden spire, "
-        "Buddha eyes, prayer flags, rhesus macaque monkeys, surrounding shrines, valley panorama"
+        "Buddha eyes, prayer flags, shrines, valley panorama"
     ),
     "asan": (
         "Asan Tole bazaar crossroads, dense merchant stalls, colorful spice sacks, "
-        "overhead electric wires, wooden shopfronts, Annapurna shrine, crowd of people, "
-        "narrow alley galli, corrugated tin rooftops"
+        "overhead electric wires, wooden shopfronts, Annapurna shrine, narrow alley galli"
     ),
     "patan": (
         "Patan Durbar Square Lalitpur, Krishna Mandir stone temple, Vishwanath temple, "
-        "Hiranyavarna Mahavihara Golden Temple, Newar brick architecture, paved courtyard, "
-        "lotus water fountain, stone guardian lions"
+        "Hiranyavarna Mahavihara Golden Temple, Newar brick architecture, paved courtyard"
     ),
     "pashupatinath": (
         "Pashupatinath temple complex, Bagmati river ghats, golden roof shikhara temple, "
-        "Hindu pilgrims, sadhus in orange robes, cremation ghats, stone lingams, "
-        "ritual offerings, banyan trees"
+        "Hindu pilgrims, stone lingams, ritual offerings, banyan trees"
     ),
 }
 
 
 def build_prompt(landmark: LandmarkConfig, config: PipelineConfig) -> str:
-    """Assembles the full generation prompt for a landmark."""
     landmark_detail = LANDMARK_STYLE_OVERRIDES.get(landmark.slug, landmark.description)
     style_detail = (
         config.stupa_style_prompt
@@ -78,13 +68,9 @@ def generate_tile(
     config: PipelineConfig,
     canny_path: str | None = None,
 ) -> str:
-    """
-    Calls the Replicate ControlNet Canny model and saves the result.
-    Returns the output file path.
-    """
     token = os.getenv("REPLICATE_API_TOKEN")
     if not token:
-        print("✗ REPLICATE_API_TOKEN not set in environment. Check your .env file.")
+        print("✗ REPLICATE_API_TOKEN not found in .env")
         sys.exit(1)
 
     if canny_path is None:
@@ -92,40 +78,86 @@ def generate_tile(
 
     if not os.path.exists(canny_path):
         print(f"✗ Canny edge map not found: {canny_path}")
-        print("  Run 02_render_3d.py first.")
         sys.exit(1)
 
     prompt = build_prompt(landmark, config)
-    print(f"\n🤖 Generating pixel art for: {landmark.name}")
-    print(f"   Model: {config.replicate_controlnet_model[:50]}...")
-    print(f"   Prompt excerpt: {prompt[:120]}...")
+    print(f"\n🚀 Sending ControlNet generation request to Replicate...")
+    print(f"   Landmark: {landmark.name}")
+    print(f"   Prompt: {prompt[:100]}...\n")
 
-    with open(canny_path, "rb") as img_file:
-        output = replicate.run(
-            config.replicate_controlnet_model,
-            input={
-                "image": img_file,
-                "prompt": prompt,
-                "negative_prompt": config.negative_prompt,
-                "num_samples": "1",
-                "image_resolution": str(config.projection.tile_render_size),
-                "low_threshold": config.controlnet_low_threshold,
-                "high_threshold": config.controlnet_high_threshold,
-                "ddim_steps": 30,
-                "scale": 9,
-                "seed": 42,  # reproducible — change for variety
-            },
-        )
+    # Encode Canny edge image as Data URI
+    with open(canny_path, "rb") as f:
+        img_b64 = base64.b64encode(f.read()).decode("utf-8")
+    data_uri = f"data:image/png;base64,{img_b64}"
 
-    # Replicate returns a list of URLs; index 1 is the generated image
-    result_url = output[1] if isinstance(output, list) and len(output) > 1 else output[0]
+    version = config.replicate_controlnet_model.split(":")[-1]
 
-    os.makedirs(config.output_generated_dir, exist_ok=True)
-    out_path = os.path.join(config.output_generated_dir, f"{landmark.slug}_art.png")
-    urllib.request.urlretrieve(result_url, out_path)
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
+    }
 
-    print(f"  💾 Generated tile → {out_path}")
-    return out_path
+    payload = {
+        "version": version,
+        "input": {
+            "image": data_uri,
+            "prompt": prompt,
+            "negative_prompt": config.negative_prompt,
+            "num_samples": "1",
+            "image_resolution": "768",
+            "low_threshold": 80,
+            "high_threshold": 200,
+            "ddim_steps": 30,
+            "scale": 9.0,
+            "seed": 42,
+        },
+    }
+
+    res = requests.post(
+        "https://api.replicate.com/v1/predictions",
+        headers=headers,
+        json=payload,
+        timeout=30,
+    )
+
+    if res.status_code != 201:
+        print(f"✗ Replicate error {res.status_code}: {res.text}")
+        sys.exit(1)
+
+    pred = res.json()
+    get_url = pred["urls"]["get"]
+    print(f"  → Prediction created: {pred['id']}")
+    print(f"  ⏳ Generating (this usually takes ~15-25 seconds)...")
+
+    while True:
+        poll_res = requests.get(get_url, headers=headers, timeout=30)
+        pred_data = poll_res.json()
+        status = pred_data.get("status")
+
+        if status == "succeeded":
+            output = pred_data.get("output")
+            img_url = output[1] if isinstance(output, list) and len(output) > 1 else output[0]
+            print(f"\n  ✓ Generation succeeded!")
+            print(f"  → Downloading image from: {img_url}")
+
+            os.makedirs(config.output_generated_dir, exist_ok=True)
+            out_path = os.path.join(config.output_generated_dir, f"{landmark.slug}_art.png")
+
+            r = requests.get(img_url, timeout=60)
+            with open(out_path, "wb") as f:
+                f.write(r.content)
+
+            print(f"  💾 Saved to {out_path}!")
+            return out_path
+        elif status == "failed":
+            print(f"✗ Generation failed: {pred_data.get('error')}")
+            sys.exit(1)
+        elif status == "canceled":
+            print("✗ Generation was canceled.")
+            sys.exit(1)
+        else:
+            print(f"  ... status: {status}")
+            time.sleep(3)
 
 
 def main():
@@ -141,7 +173,7 @@ def main():
         sys.exit(1)
 
     generate_tile(landmark, config)
-    print("\n✅ Generation complete.")
+    print("\n✅ AI Generation complete.")
 
 
 if __name__ == "__main__":
