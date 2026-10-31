@@ -123,7 +123,7 @@ class PipelineConfig:
     # Replicate model ID for ControlNet Canny
     replicate_controlnet_model: str = (
         "jagilley/controlnet-canny:"
-        "aff48af9c38d184738d8ac7ca7f3946a48d423c92a9a957a66cd5f59c25f54aa"
+        "aff48af9c68d162388d230a2ab003f68d2638d88307bdaf1c2f1ac95079c9613"
     )
     controlnet_low_threshold: int = 80
     controlnet_high_threshold: int = 200
